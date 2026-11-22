@@ -38,6 +38,19 @@ def _fit(rows, branch, minimum):
     return _fit_rows([row for row in rows if row['branch'] == branch], branch, minimum, scope='网点')
 
 
+def _summary(rows, branch, failure):
+    values = np.array([row['minutes'] for row in rows], dtype=float)
+    design = np.column_stack((np.ones(len(rows)), np.array([[row[key] for key in FEATURES] for row in rows], dtype=float)))
+    return dict(branch=branch, n=len(rows), mean_minutes=float(values.mean()), rank=0,
+                condition=None, r_squared=None, rmse=None,
+                terms={key: {'mean': float(design[:, index].mean()), 'coefficient': None}
+                       for index, key in enumerate(TERMS)}, error=str(failure))
+
+
+def _design(rows):
+    return np.column_stack((np.ones(len(rows)), np.array([[row[key] for key in FEATURES] for row in rows], dtype=float)))
+
+
 def _support(evaluated, basis):
     low, high = basis.min(axis=0), basis.max(axis=0)
     outside = (evaluated < low) | (evaluated > high)
@@ -216,27 +229,54 @@ def _matched(plan, rows, grouping):
 
 def analyze(snapshot):
     plan, rows = snapshot['plan'], snapshot['tickets']
-    xa, ba, a = _fit(rows, plan['focus_branch'], plan['min_samples'])
-    xb, bb, b = _fit(rows, plan['control_branch'], plan['min_samples'])
+    focus_rows = [row for row in rows if row['branch'] == plan['focus_branch']]
+    control_rows = [row for row in rows if row['branch'] == plan['control_branch']]
+    if not focus_rows or not control_rows:
+        raise AnalysisError('比较网点或对照网点在本窗口没有工票，无法核对可比工序。')
+    xa, xb = _design(focus_rows), _design(control_rows)
+    focus_error = control_error = None
+    try:
+        _, ba, a = _fit(rows, plan['focus_branch'], plan['min_samples'])
+    except AnalysisError as exc:
+        ba, a, focus_error = None, _summary(focus_rows, plan['focus_branch'], exc), exc
+    try:
+        _, bb, b = _fit(rows, plan['control_branch'], plan['min_samples'])
+    except AnalysisError as exc:
+        bb, b, control_error = None, _summary(control_rows, plan['control_branch'], exc), exc
+    gap = a['mean_minutes'] - b['mean_minutes']
+    grouping = _grouping(snapshot, plan)
+    matched = _matched(plan, rows, grouping)
+    if focus_error or control_error:
+        reasons = [str(error) for error in (focus_error, control_error) if error]
+        return dict(
+            method=METHOD, gap=gap, composition=None, coefficient=None, remainder=None,
+            decomposition_available=False, decomposition_reason='；'.join(reasons),
+            focus=a, control=b,
+            terms=[dict(term=key, composition=None, coefficient=None) for key in TERMS],
+            counterfactual=None,
+            extrapolation={**(_support(xa, xb) if plan['coefficient_ref'] == 'control'
+                           else _support(xb, xa)),
+                           'evaluated_branch': plan['focus_branch'] if plan['coefficient_ref'] == 'control' else plan['control_branch'],
+                           'basis_branch': plan['control_branch'] if plan['coefficient_ref'] == 'control' else plan['focus_branch']},
+            matched=matched,
+        )
     ma, mb = xa.mean(axis=0), xb.mean(axis=0)
     use_control = plan['coefficient_ref'] == 'control'
     basis = bb if use_control else ba
     composition_terms = (ma - mb) * basis
     coefficient_terms = (ma if use_control else mb) * (ba - bb)
-    gap = a['mean_minutes'] - b['mean_minutes']
     composition, coefficient = float(composition_terms.sum()), float(coefficient_terms.sum())
     remainder = gap - composition - coefficient
     if abs(remainder) > 1e-8:
         raise AnalysisError('两项之和未通过守恒检查，请核查样本。')
-    grouping = _grouping(snapshot, plan)
     return dict(
         method=METHOD, gap=gap, composition=composition, coefficient=coefficient, remainder=remainder,
-        focus=a, control=b, terms=[dict(term=key, composition=float(composition_terms[index]),
-                                       coefficient=float(coefficient_terms[index]))
-                                  for index, key in enumerate(TERMS)],
+        decomposition_available=True, focus=a, control=b,
+        terms=[dict(term=key, composition=float(composition_terms[index]), coefficient=float(coefficient_terms[index]))
+               for index, key in enumerate(TERMS)],
         counterfactual=float(ma @ bb if use_control else mb @ ba),
         extrapolation={**(_support(xa, xb) if use_control else _support(xb, xa)),
                        'evaluated_branch': a['branch'] if use_control else b['branch'],
                        'basis_branch': b['branch'] if use_control else a['branch']},
-        matched=_matched(plan, rows, grouping),
+        matched=matched,
     )

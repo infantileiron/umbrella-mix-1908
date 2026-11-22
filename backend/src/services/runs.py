@@ -6,6 +6,7 @@ from src.constants.domain import DraftStatus, METHOD, Role, RunStatus
 from src.models.db import transaction
 from src.models.queries import DRAFT_COLUMNS, PLAN_COLUMNS, RUN_COLUMNS, TICKET_COLUMNS
 from src.services.audit import record
+from src.services.grouping import plan as build_grouping
 from src.utils.queue import wake_worker
 from src.utils.serialization import canonical, checksum
 
@@ -20,7 +21,9 @@ def submit(plan_id, actor):
                        'AND worked_on BETWEEN %s AND %s ORDER BY code',
                        (plan['focus_branch'], plan['control_branch'], plan['date_from'], plan['date_to']))
         tickets = cursor.fetchall()
-        snapshot = canonical(dict(method=METHOD, plan=plan, tickets=tickets))
+        grouping = build_grouping(tickets, dict(focus_branch=plan['focus_branch'],
+                                                control_branch=plan['control_branch']))
+        snapshot = canonical(dict(method=METHOD, plan=plan, tickets=tickets, grouping=grouping))
         digest = checksum(snapshot)
         cursor.execute('INSERT INTO analysis_runs (plan_id, snapshot, snapshot_sha, created_by) VALUES (%s,%s,%s,%s)',
                        (plan_id, snapshot, digest, actor))

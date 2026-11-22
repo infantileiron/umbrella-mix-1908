@@ -33,8 +33,10 @@
 - 对比较网点 A 和对照网点 B 分别做含截距的 OLS。`x = [1, 换骨根数, 布损处数, 开合机构需修]`，系数分别为 `βA`、`βB`。各票在本组拟合和均值中等权。
 - 默认基准是 B。构成差为 `(x̄A − x̄B)·βB`，系数差为 `x̄A·(βA − βB)`，反事实均值为 `x̄A·βB`。选择 A 基准时，构成差为 `(x̄A − x̄B)·βA`，系数差为 `x̄B·(βA − βB)`，反事实均值为 `x̄B·βA`。逐项相乘给出表内贡献，截距的构成差恒为零。两项之和与 `ȳA − ȳB` 的绝对误差须不超过 `1e-8` 分钟/票。
 - 外推按使用该系数网点的逐工序最小值和最大值核对。每一项分别计数，总越界率按至少一项越界的反事实网点工票去重。结果同时保留样本数、回归秩、条件数、R² 和残差 RMSE。
+- 周会还要看「两边都做过的活」贡献多少差额。可比工序按工序格 `(换骨, 布损, 开合)` 判定：只有两个网点都出现过的工序格进入可比分组，另一边从未做过的工序格只计入单边贡献。样本太散时把相邻工序格并成矩形分带，开合机构保留为组内协变量；分带在提交时与其他输入一同封存，重试和后续修票都不改旧批次的分组。
+- 每个可比分组在两侧各自拟合同一组四参数 OLS，逐项按 `(wA·x̄A − wB·x̄B)·β基准` 与 `wA/B·x̄·(βA − βB)` 拆成构成差与系数差，其中 `w = 该组原票数 / 该网点原票数`，使各组贡献折回后加总即两点全量差额中的可比部分。组内构成差与系数差之和等于该组的实际贡献；各组实际贡献之和再加单边贡献，须与 `ȳA − ȳB` 的绝对误差不超过 `1e-8`。分组撑不起拟合时保留该组实际贡献，结果中注明缺少构成差还是系数差估计。
 - 样本低于方案阈值、设计矩阵不满秩和快照校验失败进入待补正状态。样本达标且总差为 0 时照常输出有符号的两个贡献，避免用零总差作百分比分母。
-- 运行提交时封存了方案版本、按自然键排序的工票、每条修订号和方法版本。快照 JSON 的原始字节 SHA-256 可与运行详情对照。CSV 保留完整精度、逐项系数、诊断、版本及当前复核状态。JSON 与 CSV 通过页面下载。
+- 运行提交时封存了方案版本、按自然键排序的工票、每条修订号、方法版本与可比工序分组。快照 JSON 的原始字节 SHA-256 可与运行详情对照。CSV 保留完整精度、逐项系数、诊断、分组贡献、单边贡献、对账行、版本及当前复核状态。JSON 与 CSV 通过页面下载。
 
 方法出处为 Ben Jann, *The Blinder–Oaxaca Decomposition for Linear Regression Models*, The Stata Journal 8(4), 2008, doi:10.1177/1536867X0800800401。
 
@@ -52,7 +54,7 @@ docker compose exec -T backend python -m scripts.seed_demo
 |---|---|
 | 前端 | 原生 HTML、CSS、JavaScript ES modules，`frontend/src`。Nginx 代理 `/api/`，支持 SPA 路由 |
 | API | Python 3.11、FastAPI、PyMySQL、JWT，`backend/src` |
-| 计算 | NumPy SVD 最小二乘，`backend/src/services/decomposition.py`，由 `src.worker` 调度 |
+| 计算 | NumPy SVD 最小二乘，`backend/src/services/decomposition.py` 与可比工序分组 `grouping.py`，由 `src.worker` 调度 |
 | 持久化 | MySQL 8.0 工票、方案、队列、草案与审计，`backend/migrations/001_initial.sql` |
 | 唤醒和导出 | Redis 7 唤醒，MySQL 任务队列为事实来源。worker 用共享卷原子落盘快照 |
 | 演示数据 | `backend/scripts/seed_demo.py` 和 `backend/scripts/seed_cases.py` |

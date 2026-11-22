@@ -39,6 +39,8 @@ export async function review({ id, view, active, refresh }) {
     <p role="alert" class="inline-alert" data-review-error></p></div>`)}<aside class="review-slip">
     <h2>复核依据</h2><p>${BRANCH[plan.focus_branch]} − ${BRANCH[plan.control_branch]}</p>
     <dl><dt>实际工时差</dt><dd>${signed(result.gap)} 分钟/票</dd><dt>构成差 / 系数差</dt><dd>${signed(result.composition)} / ${signed(result.coefficient)}</dd>
+    ${result.matched ? `<dt>可比工序</dt><dd>${signed(result.matched.totals.actual)} · ${result.matched.totals.estimated_groups}/${result.matched.totals.estimated_groups + result.matched.totals.unestimated_groups} 组可拟合</dd>
+    <dt>单边工序</dt><dd>${signed(result.matched.exclusive.contribution)} 分钟/票</dd>` : ''}
     <dt>越界工票</dt><dd>${result.extrapolation.outside}/${result.extrapolation.total} · ${percent(result.extrapolation.share)}</dd></dl>
     <a class="text-btn" href="#/results/${id}">查看差额与拟合 ↗</a></aside></div>`;
   if (canEdit) bindForm(view.querySelector('form'), async fields => {

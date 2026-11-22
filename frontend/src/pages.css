@@ -107,3 +107,65 @@
   .result-metric.total { grid-column: 1/-1; border-right: 0; }
   .result-meta .text-btn:last-child { margin-left: 0; }
 }
+
+/* 可比工序核对 */
+.matched-section { margin-top: 17px; border: 1px solid var(--rule); background: var(--sheet); }
+.matched-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; padding: 14px 16px; border-bottom: 1px solid var(--rule); }
+.matched-head h2 { font-size: 1.05rem; }
+.matched-head p { color: var(--muted); font-size: .82rem; margin-top: 3px; }
+.method-chip { color: var(--rust-dark); background: var(--rust-soft); padding: 2px 7px; font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.reconcile-strip { display: grid; grid-template-columns: 1.1fr 1fr 1fr 1fr; border-bottom: 1px solid var(--rule); }
+.reconcile-cell { padding: 10px 14px; border-right: 1px solid var(--rule); }
+.reconcile-cell:last-child { border-right: 0; }
+.reconcile-cell h3 { font-size: .82rem; color: var(--muted); font-weight: 700; }
+.reconcile-cell .value strong { font-size: clamp(1.15rem, .95rem + .6vw, 1.6rem); letter-spacing: -.03em; }
+.reconcile-cell p { color: var(--muted); font-size: .74rem; margin-top: 3px; }
+.reconcile-cell.total { background: var(--raw); }
+.reconcile-cell.residual .value strong { color: var(--olive); }
+.reconcile-equation { padding: 8px 16px; border-bottom: 1px solid var(--rule); font-size: .84rem; color: var(--ink); }
+.reconcile-equation:last-of-type { background: var(--raw); }
+.reconcile-equation small { color: var(--muted); }
+.matched-empty { padding: 18px 16px; color: var(--muted); }
+.group-list { display: grid; }
+.group-card { border-bottom: 1px solid var(--rule); }
+.group-card:last-child { border-bottom: 0; }
+.group-card > summary { display: grid; grid-template-columns: auto minmax(0, 2fr) auto auto auto auto; gap: 6px 14px; align-items: center; padding: 10px 16px; cursor: pointer; list-style: none; }
+.group-card > summary::-webkit-details-marker { display: none; }
+.group-card > summary::before { content: '▸'; color: var(--muted); font-size: .8rem; grid-column: 1; }
+.group-card[open] > summary::before { content: '▾'; }
+.group-card > summary > * { grid-row: 1; }
+.group-card > summary > .group-id { grid-column: 2; }
+.group-id { color: var(--rust-dark); font-weight: 700; }
+.group-range b { font-size: .84rem; font-weight: 650; }
+.group-range small { display: block; color: var(--muted); font-size: .74rem; }
+.group-counts, .group-weight { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.group-actual { font-weight: 700; }
+.group-card > summary .status { justify-self: end; }
+.group-body { padding: 4px 16px 16px 38px; }
+.group-means { color: var(--muted); font-size: .82rem; }
+.group-terms { display: flex; flex-wrap: wrap; gap: 5px 18px; margin: 7px 0; font-size: .82rem; }
+.group-missing { margin: 7px 0; padding: 7px 10px; background: oklch(94% .047 72); border-left: 3px solid var(--rust); color: var(--rust-dark); font-size: .8rem; }
+.group-fit { color: var(--muted); font-size: .78rem; }
+.muted { color: var(--muted); }
+.ticket-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.ticket-split h4 { font-size: .8rem; color: var(--muted); margin-bottom: 4px; }
+.ticket-evidence { border: 1px solid var(--rule); max-height: 260px; }
+.ticket-evidence th, .ticket-evidence td { padding: 5px 9px; font-size: .76rem; }
+.ticket-evidence .band { color: var(--rust-dark); }
+.exclusive-list { border-top: 1px solid var(--rule); }
+.exclusive-item { padding: 3px 16px; }
+.exclusive-item > summary { padding: 7px 0; cursor: pointer; font-size: .82rem; font-weight: 650; color: var(--muted); }
+.exclusive-item p { padding-bottom: 6px; color: var(--muted); font-size: .78rem; }
+.exclusive-item .ticket-codes { overflow-wrap: anywhere; }
+@media (max-width: 1050px) {
+  .group-card > summary { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .group-card > summary > .group-range { grid-column: 2 / -1; }
+  .group-counts, .group-weight, .group-actual { grid-row: 2; }
+}
+@media (max-width: 767px) {
+  .reconcile-strip { grid-template-columns: 1fr 1fr; }
+  .reconcile-cell { border-bottom: 1px solid var(--rule); }
+  .reconcile-cell.total, .reconcile-cell.residual { grid-column: 1/-1; }
+  .ticket-split { grid-template-columns: 1fr; }
+  .group-body { padding-left: 16px; }
+}

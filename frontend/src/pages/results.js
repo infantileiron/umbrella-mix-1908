@@ -2,6 +2,7 @@ import { api } from '../api/workspace.js';
 import { heading } from '../components/common/heading.js';
 import { empty } from '../components/common/panel.js';
 import { resultDetail } from '../components/result-detail.js';
+import { matchedDetail } from '../components/matched-detail.js';
 import { BASIS, BRANCH } from '../constants/domain.js';
 import { runCode } from '../utils/format.js';
 import { esc } from '../utils/html.js';
@@ -25,7 +26,7 @@ export async function results({ id, view, active }) {
     <span class="mono">${esc(plan.date_from)}  →  ${esc(plan.date_to)}</span><span>共 ${run.sample_count} 张</span>
     <button class="text-btn" data-download="snapshot" title="${esc(run.snapshot_sha)}">快照 ${esc(run.snapshot_sha.slice(0, 10))} ↓</button>
     <a class="text-btn" href="#/review/${run.id}">查看改进草案 ↗</a></div>
-    <p data-export-error role="alert" class="inline-alert"></p>` + resultDetail(result);
+    <p data-export-error role="alert" class="inline-alert"></p>` + resultDetail(result) + matchedDetail(result);
   view.querySelector('[name=result_id]').onchange = event => { location.hash = `#/results/${event.target.value}`; };
   view.querySelectorAll('[data-download]').forEach(button => button.onclick = async () => {
     const message = view.querySelector('[data-export-error]');
